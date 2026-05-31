@@ -2,6 +2,8 @@ import os
 import re
 import cv2
 import requests
+import time
+import random
 import pytesseract
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
@@ -17,18 +19,23 @@ TARGET_URL = "https://www.bda.bg/images/stories/documents/bdias/B-2.htm"
 PDF_DIR = "downloaded_pdfs"
 OUTPUT_DIR = "extracted_texts"
 
-# ==========================================
-# 1. SCRAPING & DOWNLOADING
-# ==========================================
+
+
 def download_pdfs(url, limit=None):
     """Scrapes the target URL for PDF links and downloads them locally."""
     if not os.path.exists(PDF_DIR):
         os.makedirs(PDF_DIR)
 
     print(f"Fetching links from: {url}")
-    # Add a standard user-agent so the server doesn't block us
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-    response = requests.get(url, headers=headers)
+    
+    # NEW: Use a session. This is faster and puts less strain on the target server.
+    session = requests.Session()
+    session.headers.update({
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36'
+    })
+
+    # Fetch main page
+    response = session.get(url)
     response.raise_for_status()
 
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -37,13 +44,11 @@ def download_pdfs(url, limit=None):
     pdf_links = []
     for a_tag in soup.find_all('a', href=True):
         if a_tag['href'].lower().endswith('.pdf'):
-            # urljoin makes sure relative links become full URLs
             full_url = urljoin(url, a_tag['href'])
             pdf_links.append(full_url)
     
     print(f"Found {len(pdf_links)} PDF links.")
     
-    # Limit for testing purposes if specified
     if limit:
         pdf_links = pdf_links[:limit]
 
@@ -52,18 +57,36 @@ def download_pdfs(url, limit=None):
         filename = pdf_url.split('/')[-1]
         filepath = os.path.join(PDF_DIR, filename)
         
-        # Skip if already downloaded
         if os.path.exists(filepath):
             print(f"[{i}/{len(pdf_links)}] Already exists: {filename}")
             continue
             
         print(f"[{i}/{len(pdf_links)}] Downloading {filename}...")
+        
+        # NEW: Add a random delay between 1.5 and 3.5 seconds before downloading
+        sleep_time = random.uniform(1.5, 3.5)
+        time.sleep(sleep_time)
+
         try:
-            pdf_response = requests.get(pdf_url, headers=headers)
+            # Use the session to get the PDF
+            pdf_response = session.get(pdf_url, timeout=15)
+            
+            # Check if we got blocked (e.g., 429 Too Many Requests)
+            if pdf_response.status_code == 429:
+                print("Warning: Server is rate-limiting us! Waiting 30 seconds...")
+                time.sleep(30)
+                continue # Skip this one and try the next later
+                
+            pdf_response.raise_for_status()
+            
             with open(filepath, 'wb') as f:
                 f.write(pdf_response.content)
+                
         except Exception as e:
             print(f"Failed to download {pdf_url}: {e}")
+
+
+
 
 # ==========================================
 # 2. IMAGE PREPROCESSING & OCR
@@ -199,6 +222,6 @@ if __name__ == "__main__":
     print("Starting pipeline...")
     # Change limit=5 to limit=None if you want to download ALL PDFs on the page
     # It is currently set to 5 so you can test it without downloading hundreds of files.
-    download_pdfs(TARGET_URL, limit=5)
+    download_pdfs(TARGET_URL, limit=500)
     process_pdfs()
     print("\nPipeline complete!")

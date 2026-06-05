@@ -13,7 +13,7 @@ input_directory = 'extracted_texts'
 
 # output file
 output_dir = 'extracted_chunks'
-output_file_name = 'chunks.jsonl'
+output_file_name = 'chunks.json'
 output_path = path.join(output_dir, output_file_name)
 
 # global variables that save text chunks
@@ -299,22 +299,27 @@ def extract_all_files(limit: None|int = 5):
             print(f"Finished with file {file}")
 
 
-def save_chunks_to_jsonl(overwrite=True):
-    '''Saves chunk objects in json lines to the output file'''
+def save_chunks_to_json(overwrite=True):
+    '''Saves chunk objects in json to the output file'''
+    records = []
 
-    open_mode = "w" if overwrite else "a"
+    for idx, chunk in enumerate(chunks):
+        records.append({
+            "vector_id": idx,
+            "medicine_name": chunk.medicine_name,
+            "section_id": chunk.section_id,
+            "chunk_id": chunk.chunk_id,
+            "chars": chunk.chars,
+            "text": chunk.text
+        })
 
-    with open(output_path, open_mode, encoding="utf-8") as f:
-        for chunk in chunks:
-            record = {
-                "medicine_name": chunk.medicine_name,
-                "section_id": chunk.section_id,
-                "chunk_id": chunk.chunk_id,
-                "chars": chunk.chars,
-                "text": chunk.text
-            }
-
-            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(
+            records,
+            f,
+            ensure_ascii=False,
+            indent=2
+        )
 
 # =========================================
 # EXECUTE MAIN METHOD
@@ -323,11 +328,11 @@ if __name__ == "__main__":
 
     # set limit to None to extract all files, default is limit = 5
     # extract_all_files(limit=None)
-    extract_all_files()  
+    extract_all_files(limit=None)  
 
     # set parameter overwrite=False to append chunks to end of file
-    # save_chunks_to_jsonl(overwrite=False)
-    save_chunks_to_jsonl() 
+    # save_chunks_to_json(overwrite=False)
+    save_chunks_to_json() 
 
     print("\nDone!")
     

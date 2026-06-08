@@ -1,0 +1,108 @@
+import torch
+import numpy as np
+from sentence_transformers import SentenceTransformer
+from sklearn.metrics.pairwise import cosine_similarity
+import json
+import ollama
+
+# --- 1. SETUP DEVICE (Only needed for the Embedder now) ---
+if torch.backends.mps.is_available():
+    DEVICE = torch.device("mps")
+elif torch.cuda.is_available():
+    DEVICE = torch.device("cuda")
+else:
+    DEVICE = torch.device("cpu")
+
+print("Устройство за векторизиране:", DEVICE)
+
+# --- 2. LOAD EMBEDDING MODEL ---
+# This remains the same to match how you built your index
+EMB_NAME = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+embedder = SentenceTransformer(EMB_NAME, device=str(DEVICE))
+
+# OLLAMA MODEL NAME
+OLLAMA_MODEL = "gemma4e4B:latest"
+
+# --- 3. LOAD YOUR RAG DATA ---
+# Adjust paths based on your project structure!
+try:
+    doc_embeddings = pickle.load("vector_store/med_index.faiss")
+    with open("extracted_chunks/texts.json", "r", encoding="utf-8") as f:
+        doc_texts = json.load(f)
+except FileNotFoundError:
+    print("WARNING: Files not found. Using mock data for demonstration.")
+    doc_texts = [
+        "Аспиринът се използва за облекчаване на болка и понижаване на температурата.",
+        "Парацетамолът не трябва да се приема с алкохол."
+    ] * 10 
+    doc_embeddings = embedder.encode(doc_texts, normalize_embeddings=True)
+
+
+def generate_rag_response(user_query, top_k=10):
+    # A. Embed the user query
+    query_vector = embedder.encode([user_query], normalize_embeddings=True)
+    
+    # B. Calculate Cosine Similarity
+    sims = cosine_similarity(query_vector, doc_embeddings)[0]
+    
+    # C. Take the indices of the 10 closest documents
+    top_10_indices = np.argsort(sims)[::-1][:top_k]
+    
+    # D. Extract those exact chunks
+    retrieved_texts = [doc_texts[i] for i in top_10_indices]
+    
+    # Formulate the context
+    context_str = "\n\n".join([f"--- ЧАСТ {i+1} ---\n{t}" for i, t in enumerate(retrieved_texts)])
+    
+    # E. System message instructing quotes
+    system_message = (
+        "Ти си медицински асистент, който отговаря на въпроси само на базата на предоставените листовки на лекарства. "
+        "Твоята задача е да отговориш на въпроса. "
+        "ЗАДЪЛЖИТЕЛНО ПРАВИЛО: Трябва да подкрепиш отговора си, като включиш точни цитати от оригиналния текст, оградени в кавички. "
+        "Ако отговорът не се намира в текста, кажи: 'Не мога да намеря тази информация в предоставените листовки'."
+    )
+    
+    user_message = f"Контекст (Листовки):\n{context_str}\n\nВъпрос: {user_query}"
+    
+    # Format the prompt exactly how Ollama expects it
+    messages = [
+        {"role": "system", "content": system_message},
+        {"role": "user", "content": user_message}
+    ]
+    
+    # F. Call Ollama locally
+    response = ollama.chat(
+        model=OLLAMA_MODEL,
+        messages=messages,
+        options={
+            "temperature": 0.2, # Low temperature for accurate quoting
+            "num_predict": 400  # Max tokens equivalent
+        }
+    )
+    
+    # Extract the generated text
+    answer = response['message']['content']
+    
+    return answer
+
+# --- 4. CONTINUOUS USER INPUT LOOP ---
+if __name__ == "__main__":
+    print("\n" + "="*50)
+    print(f"RAG системата е готова (LLM: {OLLAMA_MODEL})! Въведете въпрос относно листовките (или 'exit' за край).")
+    print("="*50)
+    
+    while True:
+        user_input = input("\nПотребител: ")
+        
+        if user_input.strip().lower() in ['exit', 'quit', 'изход']:
+            print("Излизане от системата...")
+            break
+            
+        if not user_input.strip():
+            continue
+            
+        print("\nТърсене на 10-те най-близки съвпадения и генериране на отговор чрез Ollama...")
+        answer = generate_rag_response(user_input, top_k=10)
+        
+        print("\n--- ОТГОВОР ---")
+        print(answer)

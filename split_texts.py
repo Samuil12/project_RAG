@@ -235,7 +235,7 @@ class Chunk:
         return str(self)
        
 
-def split_into_chunks(sections_texts, medicine_name, chunk_size=1500, overlap=100):
+def split_into_chunks(sections_texts, medicine_name, chunk_size=1000, overlap=100):
     '''Splits text into chunks and saves them as a list of chunk objects'''
     
     # get every section

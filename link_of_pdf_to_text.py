@@ -15,7 +15,8 @@ from pdf2image import convert_from_path
 # Uncomment and set this if you are on Windows!
 # pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
-TARGET_URL = "https://www.bda.bg/images/stories/documents/bdias/B-2.htm"
+#TARGET_URL = "https://www.bda.bg/images/stories/documents/bdias/B-2.htm"
+TARGET_URL = "https://www.bda.bg/images/stories/documents/bdias/A-2.htm"
 PDF_DIR = "downloaded_pdfs"
 OUTPUT_DIR = "extracted_texts"
 

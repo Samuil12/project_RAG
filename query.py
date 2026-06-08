@@ -17,7 +17,7 @@ class MedicalRAGSystem:
         index_file: str = "vector_store/med_index.faiss",
         model_name: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
         ollama_base_url: str = "http://localhost:11434",
-        ollama_model: str = "gemma3:4b", #  "llama3.2:1b",
+        ollama_model: str = "gemma3:4b",
         llm_temperature: float = 0.1,
         top_k: int = 5
     ):
@@ -117,7 +117,6 @@ class MedicalRAGSystem:
             "options": {
                 "temperature": self.llm_temperature,
                 "num_ctx": 4096,
-                # ТУК Е МАГИЯТА: Казваме на модела кога да спре принудително
                 "stop": [
                     "ВЪПРОС НА ПОТРЕБИТЕЛЯ", 
                     "ВЪПРОС НА ПОТРЕБИТЕЛЯ:", 

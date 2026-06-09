@@ -184,6 +184,7 @@ def split_into_sections(lines):
 
             # valid start (2nd occurrence)
             if current_section is not None:
+                # add section title to section text
                 if current_section != "4":
                     results += match + f" {medicine_name}\n"
                 results[current_section] += "\n".join(buffer)

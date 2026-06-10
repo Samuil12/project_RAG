@@ -1,0 +1,9 @@
+numpy
+faiss-cpu
+sentence-transformers
+opencv-python
+pytesseract
+pdf2image
+requests
+beautifulsoup4
+rapidfuzz

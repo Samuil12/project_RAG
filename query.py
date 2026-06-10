@@ -1,7 +1,6 @@
 import json
 import logging
 import sys
-import numpy as np
 import faiss
 import requests
 from typing import List, Dict, Any, Tuple

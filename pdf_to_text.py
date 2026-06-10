@@ -1,7 +1,6 @@
 import os
 import re
 import cv2
-import numpy as np
 import pytesseract
 from pdf2image import convert_from_path
 

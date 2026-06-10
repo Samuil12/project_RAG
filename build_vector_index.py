@@ -1,6 +1,5 @@
 import os
 import json
-import numpy as np
 import faiss                                          # pip install faiss-cpu
 from sentence_transformers import SentenceTransformer # pip install sentence-transformers
 

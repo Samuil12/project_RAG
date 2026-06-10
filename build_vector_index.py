@@ -16,17 +16,12 @@ def load_chunks(json_path):
 def main():
     os.makedirs("vector_store", exist_ok=True)
 
-    # 1) Load chunk records
     chunks = load_chunks(INPUT_FILE)
 
-    # 2) Extract only the text to embed
     texts = [c["text"] for c in chunks]
 
-    # 3) Load embedding model
     model = SentenceTransformer(MODEL_NAME)
 
-    # 4) Convert text -> vectors
-    # normalize_embeddings=True lets us use cosine similarity with inner product
     embeddings = model.encode(
         texts,
         batch_size=32,
@@ -35,12 +30,10 @@ def main():
         normalize_embeddings=True,
     ).astype("float32")
 
-    # 5) Build FAISS index
     dim = embeddings.shape[1]
-    index = faiss.IndexFlatIP(dim)  # inner product on normalized vectors = cosine similarity
+    index = faiss.IndexFlatIP(dim)
     index.add(embeddings)
 
-    # 6) Save index + metadata
     faiss.write_index(index, INDEX_FILE)
 
 

@@ -65,7 +65,7 @@ for section_id, headings in ALL_HEADINGS.items():
 
 
 # used for comparing beginning of lines to section titles
-# cuts the line to
+# cuts the line to the length of the longest title template in that section
 extra_chars = 10
 SECTION_HEADINGS_LENGTHS = {
     "1": max(len(heading) for heading in section_1_headings) + extra_chars,
@@ -299,7 +299,7 @@ def extract_all_files(limit: None|int = 5):
             print(f"Finished with file {file}")
 
 
-def save_chunks_to_json(overwrite=True):
+def save_chunks_to_json():
     '''Saves chunk objects in json to the output file'''
     records = []
 

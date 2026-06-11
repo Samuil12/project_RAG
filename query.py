@@ -89,7 +89,7 @@ class MedicalRAGSystem:
 
         system_prompt = (
             "Ти си професионален медицински асистент. Отговаряй на въпросите САМО на базата на предоставените източници.\n"
-            "Ако отговорът не присъства в контекста, кажи: „Не знам. СПРИ!"
+            "Ако отговорът не присъства в контекста, кажи: „Не знам.“."
             "Цитирай използваните откъси и номерата им, например [цитат] [#3]."
             "Отговори с не повече от 200 думи."
         )
@@ -119,8 +119,7 @@ class MedicalRAGSystem:
                 "stop": [
                     "ВЪПРОС НА ПОТРЕБИТЕЛЯ", 
                     "ВЪПРОС НА ПОТРЕБИТЕЛЯ:", 
-                    "ВЪПРОС:",
-                    "СПРИ!"
+                    "ВЪПРОС:"
                 ]
             }
         }
@@ -167,7 +166,7 @@ class MedicalRAGSystem:
             # Print search context
             print(f"\n[Намерени {len(retrieved)} релевантни откъса]")
             for r in retrieved[:3]: # Limit to top 3 in logs to avoid terminal clutter
-                print(f" - ID: {r['vector_id']} | {r['medicine'][:11]}... ({r['section']}) | Сходство: {r['score']:.4f}")
+                print(f" - ID: {r['vector_id']} | {r['medicine']} ({r['section']}) | Сходство: {r['score']:.4f}")
             if len(retrieved) > 3:
                 print(f"   ... и още {len(retrieved) - 3} източника.")
 

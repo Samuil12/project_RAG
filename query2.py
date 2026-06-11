@@ -19,7 +19,7 @@ class MedicalRAGSystem:
         ollama_base_url: str = "http://localhost:11434",
         ollama_model: str = "gemma3:4b",
         llm_temperature: float = 0.1,
-        top_k: int = 5,
+        top_k: int = 10,
     ):
         self.chunks_file = chunks_file
         self.index_file = index_file

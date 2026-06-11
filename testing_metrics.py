@@ -1,5 +1,4 @@
 from query2 import MedicalRAGSystem
-import numpy as np
 
 # example questions and answers
 evaluation_set = [

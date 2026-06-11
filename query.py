@@ -167,7 +167,7 @@ class MedicalRAGSystem:
             # Print search context
             print(f"\n[Намерени {len(retrieved)} релевантни откъса]")
             for r in retrieved[:3]: # Limit to top 3 in logs to avoid terminal clutter
-                print(f" - ID: {r['vector_id']} | {r['medicine']} ({r['section']}) | Сходство: {r['score']:.4f}")
+                print(f" - ID: {r['vector_id']} | {r['medicine'][:11]}... ({r['section']}) | Сходство: {r['score']:.4f}")
             if len(retrieved) > 3:
                 print(f"   ... и още {len(retrieved) - 3} източника.")
 

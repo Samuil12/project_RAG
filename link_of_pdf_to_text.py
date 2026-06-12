@@ -30,19 +30,16 @@ def download_pdfs(url, limit=None):
 
     print(f"Fetching links from: {url}")
     
-    # NEW: Use a session. This is faster and puts less strain on the target server.
     session = requests.Session()
     session.headers.update({
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36'
     })
 
-    # Fetch main page
     response = session.get(url)
     response.raise_for_status()
 
     soup = BeautifulSoup(response.text, 'html.parser')
     
-    # Find all anchor tags ending in .pdf (case insensitive)
     pdf_links = []
     for a_tag in soup.find_all('a', href=True):
         if a_tag['href'].lower().endswith('.pdf'):
@@ -54,7 +51,6 @@ def download_pdfs(url, limit=None):
     if limit:
         pdf_links = pdf_links[:limit]
 
-    # Download each PDF
     for i, pdf_url in enumerate(pdf_links, 1):
         filename = pdf_url.split('/')[-1]
         filepath = os.path.join(PDF_DIR, filename)
@@ -65,19 +61,16 @@ def download_pdfs(url, limit=None):
             
         print(f"[{i}/{len(pdf_links)}] Downloading {filename}...")
         
-        # NEW: Add a random delay between 1.5 and 3.5 seconds before downloading
         sleep_time = random.uniform(1.5, 3.5)
         time.sleep(sleep_time)
 
         try:
-            # Use the session to get the PDF
             pdf_response = session.get(pdf_url, timeout=15)
             
-            # Check if we got blocked (e.g., 429 Too Many Requests)
             if pdf_response.status_code == 429:
                 print("Warning: Server is rate-limiting us! Waiting 30 seconds...")
                 time.sleep(30)
-                continue # Skip this one and try the next later
+                continue 
                 
             pdf_response.raise_for_status()
             
@@ -103,8 +96,6 @@ def preprocess_image(image_path):
 def clean_extracted_text(text):
     """Cleans up stamps, handwritten dates, OCR hallucinations, and units."""
     
-    # 1. REMOVE SPECIFIC STAMP TEXT & KNOWN OCR HALLUCINATIONS
-    # We add the distorted versions of the stamp (like AGHA instead of АГЕНЦИЯ)
     stamp_phrases = [
         r"ИЗПЪЛНИТЕЛНА АГЕНЦИЯ ПО ЛЕКАРСТВАТА",
         r"РЕПУБЛИКА БЪЛГАРИЯ",
@@ -118,12 +109,10 @@ def clean_extracted_text(text):
     for phrase in stamp_phrases:
         text = re.sub(phrase, '', text, flags=re.IGNORECASE)
 
-    # 2. REMOVE HANDWRITTEN DATES & NUMBERS
     text = re.sub(r'\b\d{2}\s*-\s*\d{2}\s*-\s*\d{4}\b', '', text)
     text = re.sub(r'(?m)^\s*\d{5,8}\s*$', '', text)
     text = re.sub(r'(?m)^\s*\d{3}-\d{2}\s*$', '', text)
 
-    # 3. FIX UNITS
     text = re.sub(r'(?<=\d)\s*[мmМM][gгГG]\b', ' mg', text)
     text = re.sub(r'(?<=\d)\s*[кkКK][gгГG]\b', ' kg', text)
     text = re.sub(r'[СC][DД]4', 'CD4', text, flags=re.IGNORECASE)
@@ -139,33 +128,24 @@ def clean_extracted_text(text):
     for line in text.split('\n'):
         line_stripped = line.strip()
         
-        # Skip empty lines for now (we'll fix spacing at the end)
         if not line_stripped:
             continue
             
-        # Rule A: Does the line start with weird OCR punctuation? 
-        # (Often caused by the edge of a stamp, e.g., "| ии ЛА |." or ": та ii")
         if re.match(r'^[\s\|:\.\#\_\~]+', line_stripped) and len(line_stripped) < 30:
             continue
             
-        # Rule B: Density of weird symbols. 
-        # If a line contains too many |, #, =, or :, it is likely stamp noise.
         symbol_count = len(re.findall(r'[|:;<>_~\-\\\/=#]', line_stripped))
         # If more than 3 weird symbols exist in a short line, drop it.
         if symbol_count >= 3 and len(line_stripped.split()) < 7:
             continue
             
-        # Rule C: Does it contain known exact gibberish fragments?
         if any(frag in line for frag in gibberish_fragments):
             continue
             
-        # If it passes the rules, keep the line
         cleaned_lines.append(line_stripped)
 
-    # Rejoin the lines
     text = '\n'.join(cleaned_lines)
 
-    # 5. Clean up multiple empty lines caused by deletions
     text = re.sub(r'\n{3,}', '\n\n', text)
     
     return text.strip()
@@ -182,7 +162,6 @@ def process_pdfs():
         txt_filename = filename.replace(".pdf", ".txt")
         txt_path = os.path.join(OUTPUT_DIR, txt_filename)
         
-        # Skip if we already extracted text for this PDF
         if os.path.exists(txt_path):
             print(f"Skipping OCR for {filename} (Text file already exists).")
             continue
@@ -222,8 +201,6 @@ def process_pdfs():
 # ==========================================
 if __name__ == "__main__":
     print("Starting pipeline...")
-    # Change limit=5 to limit=None if you want to download ALL PDFs on the page
-    # It is currently set to 5 so you can test it without downloading hundreds of files.
     download_pdfs(TARGET_URL, limit=500)
     process_pdfs()
     print("\nPipeline complete!")

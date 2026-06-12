@@ -67,14 +67,12 @@ evaluation_set = [
 ]
 
 def evaluate_rag(rag: MedicalRAGSystem):
-    '''Evaluates the metrics recall, MRR and the answer's semantic score'''
+    '''Evaluates the metrics recall and MRR'''
     n = len(evaluation_set)
 
     # 1. retrieval metrics
     total_mrr = 0.0
     total_recall = 0.0
-
-    retrieved_sets = []
 
     for sample in evaluation_set:
         question = sample["question"]
@@ -82,8 +80,6 @@ def evaluate_rag(rag: MedicalRAGSystem):
 
         retrieved, _ = rag.retrieve(question)
         retrieved_ids = [r["vector_id"] for r in retrieved]
-
-        retrieved_sets.append(retrieved_ids)
 
         # recall at k
         hits = len(set(retrieved_ids) & relevant)
